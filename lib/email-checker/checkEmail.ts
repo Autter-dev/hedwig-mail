@@ -8,8 +8,17 @@ function getCheckerBaseUrl(): string {
   return base.replace(/\/$/, '')
 }
 
+function getCheckerApiSecret(): string {
+  const secret = process.env.EMAIL_CHECKER_API_SECRET?.trim()
+  if (!secret) {
+    throw new Error('EMAIL_CHECKER_API_SECRET is not configured')
+  }
+  return secret
+}
+
 export async function checkEmail(rawInput: CheckEmailInput = { to_email: '' }): Promise<CheckEmailResult> {
   const baseUrl = getCheckerBaseUrl()
+  const apiSecret = getCheckerApiSecret()
   const url = `${baseUrl}/v1/check_email`
 
   const timeoutMsRaw = parseInt(process.env.EMAIL_CHECKER_TIMEOUT_MS || '30000', 10)
@@ -19,10 +28,7 @@ export async function checkEmail(rawInput: CheckEmailInput = { to_email: '' }): 
 
   const headers: Record<string, string> = {
     'content-type': 'application/json',
-  }
-  const apiSecret = process.env.EMAIL_CHECKER_API_SECRET?.trim()
-  if (apiSecret) {
-    headers['x-api-secret'] = apiSecret
+    'x-api-secret': apiSecret,
   }
 
   const payload = {
@@ -32,12 +38,20 @@ export async function checkEmail(rawInput: CheckEmailInput = { to_email: '' }): 
   }
 
   try {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload),
-      signal: controller.signal,
-    })
+    let response: Response
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw new Error(
+        `Checker API connection failed for ${url}. Verify EMAIL_CHECKER_BASE_URL points to a reachable checker service and that networking is enabled. Original error: ${msg}`,
+      )
+    }
 
     if (!response.ok) {
       const body = await response.json().catch(() => ({}))

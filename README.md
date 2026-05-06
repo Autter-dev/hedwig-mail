@@ -144,8 +144,8 @@ mc mb local/emailtool
 | `S3_FORCE_PATH_STYLE` | Use path-style URLs (required for MinIO) | `true` |
 | `ENCRYPTION_KEY` | 32-byte hex key for encrypting provider credentials | (required) |
 | `WORKER_CONCURRENCY` | Number of concurrent email send jobs | `5` |
-| `EMAIL_CHECKER_BASE_URL` | External checker API base URL (used for `/v1/check_email`) | `http://127.0.0.1:8080` |
-| `EMAIL_CHECKER_API_SECRET` | Optional checker auth secret sent as `x-api-secret` | |
+| `EMAIL_CHECKER_BASE_URL` | External checker API public base URL (used for `/v1/check_email`) | (required) |
+| `EMAIL_CHECKER_API_SECRET` | Checker auth secret sent as `x-api-secret` | (required) |
 | `EMAIL_CHECKER_TIMEOUT_MS` | Timeout for checker API calls in milliseconds | `30000` |
 | `HIBP_API_KEY` | Optional Have I Been Pwned key forwarded to checker requests | |
 | `CONFIRMATION_FROM_EMAIL` | Sender address for double opt-in confirmation emails. Required when any list has double opt-in enabled. Sender name uses `APP_NAME`. | (required if double opt-in is used) |

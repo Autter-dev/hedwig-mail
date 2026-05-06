@@ -4,10 +4,21 @@ function getBaseUrl(): string | null {
   return base.replace(/\/$/, '')
 }
 
+function getApiSecret(): string | null {
+  const secret = process.env.EMAIL_CHECKER_API_SECRET?.trim()
+  if (!secret) return null
+  return secret
+}
+
 export async function runEmailCheckerStartupSelfCheck(service: 'web' | 'worker'): Promise<void> {
   const base = getBaseUrl()
   if (!base) {
     console.warn(`[startup:${service}] EMAIL_CHECKER_BASE_URL is not set, skipping checker health check`)
+    return
+  }
+  const apiSecret = getApiSecret()
+  if (!apiSecret) {
+    console.warn(`[startup:${service}] EMAIL_CHECKER_API_SECRET is not set, skipping checker health check`)
     return
   }
 
@@ -16,11 +27,7 @@ export async function runEmailCheckerStartupSelfCheck(service: 'web' | 'worker')
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
-  const headers: Record<string, string> = {}
-  const secret = process.env.EMAIL_CHECKER_API_SECRET?.trim()
-  if (secret) {
-    headers['x-api-secret'] = secret
-  }
+  const headers: Record<string, string> = { 'x-api-secret': apiSecret }
 
   try {
     const response = await fetch(`${base}/health`, {

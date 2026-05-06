@@ -201,7 +201,7 @@ Startup backfill is enabled by default for unverified contacts and can be disabl
 
 Manual `POST /api/internal/lists/[id]/email-check` and `POST /api/v1/email-check` invoke the checker in the requesting process and do not use that queue. These checks use the SMTP identity configured in **Settings > Bounces**.
 
-Checker calls are made through the local TypeScript client (`lib/email-checker/checkEmail.ts`) to an external checker API configured via `EMAIL_CHECKER_BASE_URL` (endpoint `/v1/check_email`). If configured, `EMAIL_CHECKER_API_SECRET` is sent as `x-api-secret`.
+Checker calls are made through the local TypeScript client (`lib/email-checker/checkEmail.ts`) to an external checker API configured via `EMAIL_CHECKER_BASE_URL` (endpoint `/v1/check_email`). `EMAIL_CHECKER_API_SECRET` is required and is sent as `x-api-secret` on checker requests.
 
 Reference checker service implementation: [sagnik11/email-checker](https://github.com/sagnik11/email-checker).
 
