@@ -8,6 +8,7 @@ import { createContactSchema } from '@/lib/validations/contacts'
 import { auditFromApiKey, logAudit } from '@/lib/audit'
 import { getQueue, JOBS } from '@/lib/queue'
 import { logger } from '@/lib/logger'
+import { enqueueContactEmailVerification } from '@/lib/email-verify'
 
 export async function GET(
   req: NextRequest,
@@ -107,6 +108,8 @@ export async function POST(
         logger.error({ err, contactId: created.id }, 'Failed to enqueue confirmation job')
       }
     }
+
+    await enqueueContactEmailVerification([created.id])
 
     await logAudit(
       auditFromApiKey(req, auth),

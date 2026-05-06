@@ -30,9 +30,16 @@ const unsubscribePageSchema = z
   .nullable()
   .optional()
 
+const optionalVerifyHello = z
+  .union([z.string().trim().max(253, 'Must be 253 characters or fewer'), z.literal(''), z.null()])
+  .transform((v) => (v === '' || v === null ? null : v))
+  .optional()
+
 export const updateAppSettingsSchema = z.object({
   confirmationFromEmail: optionalEmail,
   confirmationFromName: optionalName,
+  emailVerifyFromEmail: optionalEmail,
+  emailVerifyHelloName: optionalVerifyHello,
   unsubscribePage: unsubscribePageSchema,
 })
 

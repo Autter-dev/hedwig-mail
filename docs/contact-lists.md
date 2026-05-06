@@ -15,9 +15,10 @@ Named lists hold contacts and own the relationship to campaigns. Each list can o
 ## Routes & pages
 
 - `/lists`: index with counts
-- `/lists/[id]`: contact tabs (active, bounced, unsubscribed, pending)
+- `/lists/[id]`: contact tabs (active, bounced, undeliverable, unsubscribed, pending), plus Duplicates and Email Checker
 - `/lists/[id]/upload`: import flow (see [contact-upload.md](contact-upload.md))
 - `/lists/duplicates`: cross-list duplicates view (see [deduplication.md](deduplication.md))
+- `/settings/bounces` (admin): MAIL FROM and EHLO identity for SMTP verification (see below)
 
 ## API endpoints
 
@@ -29,6 +30,7 @@ Named lists hold contacts and own the relationship to campaigns. Each list can o
 | PATCH | `/api/internal/lists/[id]` | Session | Update list |
 | DELETE | `/api/internal/lists/[id]` | Session | Delete list (cascades contacts) |
 | GET | `/api/internal/lists/[id]/contacts` | Session | Paginated contacts. Query: `page`, `limit`, `status`, `search` |
+| POST | `/api/internal/lists/[id]/email-check` | Session | Manual SMTP check for one email (body: `{ email }`). Does not persist. |
 | GET | `/api/internal/lists/[id]/export` | Session | Stream CSV of all contacts |
 | GET | `/api/internal/lists/[id]/merge-tags` | Session | Discover available metadata keys |
 
@@ -47,6 +49,14 @@ Public REST equivalents under `/api/v1/lists` are documented in [public-api.md](
 
 ## Notes
 
-- Contact `status` values: `active`, `bounced`, `unsubscribed`, `pending`.
+- Contact `status` values: `active`, `bounced`, `undeliverable`, `unsubscribed`, `pending`. Imports enqueue verification: `invalid` or `risky` SMTP verdicts map to `undeliverable`.
 - `pending` is set when double opt-in is required and the contact has not confirmed yet.
 - Deleting a list cascades to its contacts and their send and event history.
+
+## Email verification and throttling
+
+Imports, API-created contacts, and the worker backfill enqueue `verify-contact-email` jobs. The **worker** runs probes with a minimum gap between completed checks (`EMAIL_VERIFY_MIN_GAP_MS`, default 2500) and low parallel concurrency per process (`EMAIL_VERIFY_WORKER_CONCURRENCY`, default 1, max 4) so recipient MX infrastructure is not flooded. Set `EMAIL_VERIFY_MIN_GAP_MS=0` only if you accept a much faster, more aggressive pace.
+
+Optional `EMAIL_VERIFY_ENQUEUE_STAGGER_MS` spreads job `startAfter` times when bulk-enqueueing or during startup backfill (default 0: jobs become eligible immediately; pacing still comes from the worker).
+
+Dashboard **Settings > Bounces** stores the SMTP MAIL FROM and hello name used for those checks (and for manual list email checks). See [public-api.md](public-api.md) for the public `email-check` endpoint, which runs on demand and is separate from the background queue.

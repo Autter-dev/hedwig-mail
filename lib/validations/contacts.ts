@@ -12,7 +12,7 @@ export const updateContactSchema = z.object({
   firstName: z.string().optional(),
   lastName: z.string().optional(),
   metadata: z.record(z.string()).optional(),
-  status: z.enum(['active', 'bounced', 'unsubscribed']).optional(),
+  status: z.enum(['active', 'pending', 'bounced', 'unsubscribed', 'undeliverable']).optional(),
 })
 
 export const bulkContactsSchema = z.object({

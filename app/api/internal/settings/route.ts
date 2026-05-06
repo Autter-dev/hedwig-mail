@@ -37,6 +37,8 @@ export async function PATCH(req: NextRequest) {
       {
         confirmationFromEmail: updated.confirmationFromEmail,
         confirmationFromName: updated.confirmationFromName,
+        emailVerifyFromEmail: updated.emailVerifyFromEmail,
+        emailVerifyHelloName: updated.emailVerifyHelloName,
         unsubscribePageCustomized: updated.unsubscribePage !== null,
       },
     )

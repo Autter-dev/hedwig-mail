@@ -33,6 +33,7 @@ interface Meta {
 
 function statusBadgeVariant(status: string): 'default' | 'destructive' | 'outline' | 'secondary' {
   if (status === 'bounced') return 'destructive'
+  if (status === 'undeliverable') return 'destructive'
   if (status === 'unsubscribed') return 'outline'
   if (status === 'active') return 'default'
   return 'secondary'

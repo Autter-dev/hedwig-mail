@@ -9,6 +9,7 @@ import { uploadConfirmSchema } from '@/lib/validations/lists'
 import { auditFromSession, logAudit } from '@/lib/audit'
 import { getQueue, JOBS } from '@/lib/queue'
 import { logger } from '@/lib/logger'
+import { enqueueContactEmailVerification } from '@/lib/email-verify'
 
 const s3 = new S3Client({
   region: process.env.S3_REGION!,
@@ -127,6 +128,7 @@ export async function POST(
   let inserted = 0
   let updated = 0
   const newContactIds: string[] = []
+  const verifiedContactIds: string[] = []
   for (let i = 0; i < validContacts.length; i += BATCH_SIZE) {
     const batch = validContacts.slice(i, i + BATCH_SIZE)
     const returned = await db
@@ -143,6 +145,7 @@ export async function POST(
       })
       .returning({ id: contacts.id, isInsert: sql<boolean>`xmax = 0` })
     for (const row of returned) {
+      verifiedContactIds.push(row.id)
       if (row.isInsert) {
         inserted++
         if (requireDoubleOptIn) newContactIds.push(row.id)
@@ -151,6 +154,8 @@ export async function POST(
       }
     }
   }
+
+  await enqueueContactEmailVerification(verifiedContactIds)
 
   if (requireDoubleOptIn && newContactIds.length > 0) {
     try {

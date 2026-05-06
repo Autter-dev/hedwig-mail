@@ -53,6 +53,16 @@ Each API key has its own `rate_limit_per_minute`. The limiter is implemented as 
 | DELETE | `/api/v1/lists/[listId]/contacts/[id]` | Delete contact |
 | POST | `/api/v1/lists/[listId]/contacts/bulk` | Upsert up to 1000 contacts |
 
+### Email verification
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/email-check` | Check one address (body: `{ to_email, check_gravatar? }`). Returns full checker payload plus `verdict` and `undeliverable` (true when verdict is `invalid` or `risky`). |
+
+New contacts from the bulk or single-contact endpoints are queued for background verification. Invalid or risky addresses become list status `undeliverable`.
+
+Background verification runs in the **worker** (`verify-contact-email` queue). Throughput is intentionally limited so MX checks do not look like abuse: a configurable minimum delay after each probe (`EMAIL_VERIFY_MIN_GAP_MS`, default 2500 ms), one concurrent verify per worker process by default (`EMAIL_VERIFY_WORKER_CONCURRENCY`, max 4), and an optional enqueue stagger (`EMAIL_VERIFY_ENQUEUE_STAGGER_MS`, default 0) for large batches and backfill. The synchronous `POST /api/v1/email-check` call is not queued; it runs immediately when you call it and is still subject to per-API-key rate limits.
+
 ### Campaigns
 
 | Method | Path | Description |
