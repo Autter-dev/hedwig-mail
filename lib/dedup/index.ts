@@ -1,6 +1,6 @@
 import type { Contact } from '@/lib/db/schema'
 
-export type ContactStatus = 'active' | 'bounced' | 'unsubscribed'
+export type ContactStatus = 'active' | 'bounced' | 'unsubscribed' | 'undeliverable'
 
 export type DedupCandidate = Pick<
   Contact,
@@ -24,8 +24,10 @@ export function completenessScore(contact: DedupCandidate): number {
 }
 
 const STATUS_RANK: Record<string, number> = {
-  unsubscribed: 2,
-  bounced: 1,
+  unsubscribed: 4,
+  bounced: 3,
+  undeliverable: 2,
+  pending: 1,
   active: 0,
 }
 

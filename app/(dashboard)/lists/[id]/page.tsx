@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import { DuplicatesTab } from '@/components/lists/DuplicatesTab'
+import { EmailCheckerTab } from '@/components/lists/EmailCheckerTab'
 
 interface ListInfo {
   id: string
@@ -44,6 +45,7 @@ interface ListInfo {
     bounced: number
     unsubscribed: number
     pending: number
+    undeliverable: number
     total: number
   }
 }
@@ -63,8 +65,8 @@ interface ContactsMeta {
   total: number
 }
 
-type TabStatus = 'active' | 'pending' | 'bounced' | 'unsubscribed'
-type TabValue = TabStatus | 'duplicates'
+type TabStatus = 'active' | 'pending' | 'bounced' | 'unsubscribed' | 'undeliverable'
+type TabValue = TabStatus | 'duplicates' | 'email-check'
 
 export default function ListDetailPage() {
   const params = useParams() as { id: string }
@@ -258,7 +260,7 @@ export default function ListDetailPage() {
 
   // Fetch contacts whenever tab, page, or search changes
   const fetchContacts = useCallback(async () => {
-    if (activeTab === 'duplicates') {
+    if (activeTab === 'duplicates' || activeTab === 'email-check') {
       return
     }
     setContactsLoading(true)
@@ -372,6 +374,9 @@ export default function ListDetailPage() {
             )}
             {(listInfo?.counts.bounced ?? 0) > 0 && (
               <Badge variant="destructive">{listInfo?.counts.bounced} bounced</Badge>
+            )}
+            {(listInfo?.counts.undeliverable ?? 0) > 0 && (
+              <Badge variant="destructive">{listInfo?.counts.undeliverable} undeliverable</Badge>
             )}
             {(listInfo?.counts.unsubscribed ?? 0) > 0 && (
               <Badge variant="outline">{listInfo?.counts.unsubscribed} unsubscribed</Badge>
@@ -488,6 +493,12 @@ export default function ListDetailPage() {
               {listInfo?.counts.bounced ?? 0}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="undeliverable">
+            Undeliverable
+            <Badge variant="secondary" className="ml-2">
+              {listInfo?.counts.undeliverable ?? 0}
+            </Badge>
+          </TabsTrigger>
           <TabsTrigger value="unsubscribed">
             Unsubscribed
             <Badge variant="secondary" className="ml-2">
@@ -503,9 +514,10 @@ export default function ListDetailPage() {
               {duplicateGroupCount ?? 0}
             </Badge>
           </TabsTrigger>
+          <TabsTrigger value="email-check">Email Checker</TabsTrigger>
         </TabsList>
 
-        {(['active', 'pending', 'bounced', 'unsubscribed'] as TabStatus[]).map((tab) => (
+        {(['active', 'pending', 'bounced', 'undeliverable', 'unsubscribed'] as TabStatus[]).map((tab) => (
           <TabsContent key={tab} value={tab} className="space-y-4">
             {/* Search bar */}
             <div className="flex items-center gap-2">
@@ -621,6 +633,10 @@ export default function ListDetailPage() {
             </div>
           </TabsContent>
         ))}
+
+        <TabsContent value="email-check" className="space-y-4">
+          <EmailCheckerTab listId={listId} />
+        </TabsContent>
 
         <TabsContent value="duplicates" className="space-y-4">
           <DuplicatesTab

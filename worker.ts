@@ -1,6 +1,7 @@
 import { PgBoss } from 'pg-boss'
 import { db } from './lib/db'
 import { campaigns, campaignSends, contacts, emailProviders, forms } from './lib/db/schema'
+import { checkEmail } from './lib/email-checker/checkEmail'
 import { eq } from 'drizzle-orm'
 import { createProviderAdapter } from './lib/providers/factory'
 import { renderTemplate, renderPlainText } from './lib/renderer'
@@ -154,6 +155,57 @@ async function processSendJob(sendId: string, campaignId: string) {
   trackEvent('email_send_complete', { sendId, campaignId, providerType: provider.type, durationMs })
 }
 
+async function processVerifyContactEmail(contactId: string) {
+  const [contact] = await db.select().from(contacts).where(eq(contacts.id, contactId))
+  if (!contact) {
+    logger.warn({ contactId }, 'Verify email: contact not found')
+    return
+  }
+  if (contact.status === 'unsubscribed' || contact.status === 'bounced') {
+    logger.info({ contactId, status: contact.status }, 'Verify email: skipped terminal status')
+    return
+  }
+
+  const result = await checkEmail({ to_email: contact.email })
+  const verdict = result.is_reachable
+
+  const prevMeta = (contact.metadata as Record<string, string> | null) ?? {}
+  const metadata: Record<string, string> = {
+    ...prevMeta,
+    _email_verify_reachable: verdict,
+    _email_verify_checked_at: new Date().toISOString(),
+  }
+  if ('error' in result.smtp) {
+    metadata._email_verify_smtp_error = JSON.stringify(result.smtp.error)
+  }
+
+  if (contact.status === 'pending') {
+    if (verdict === 'invalid' || verdict === 'risky') {
+      await db
+        .update(contacts)
+        .set({ status: 'undeliverable', metadata, updatedAt: new Date() })
+        .where(eq(contacts.id, contactId))
+    } else {
+      await db.update(contacts).set({ metadata, updatedAt: new Date() }).where(eq(contacts.id, contactId))
+    }
+    return
+  }
+
+  if (verdict === 'invalid' || verdict === 'risky') {
+    await db
+      .update(contacts)
+      .set({ status: 'undeliverable', metadata, updatedAt: new Date() })
+      .where(eq(contacts.id, contactId))
+  } else if (contact.status === 'undeliverable') {
+    await db.update(contacts).set({ status: 'active', metadata, updatedAt: new Date() }).where(eq(contacts.id, contactId))
+  } else {
+    await db.update(contacts).set({ metadata, updatedAt: new Date() }).where(eq(contacts.id, contactId))
+  }
+
+  logger.info({ contactId, verdict, email: contact.email }, 'Contact email verification complete')
+  trackEvent('contact_email_verified', { contactId, verdict })
+}
+
 async function processConfirmationJob(contactId: string, formId: string) {
   logger.info({ contactId, formId }, 'Processing confirmation email job')
 
@@ -240,7 +292,14 @@ async function main() {
   logger.info('pg-boss started')
 
   // Create queues if they don't exist (required in pg-boss v12+)
-  for (const queue of [JOBS.SEND_EMAIL, JOBS.FINALIZE_CAMPAIGN, JOBS.SEND_CONFIRMATION, JOBS.SEND_CONFIRMATION_EMAIL, JOBS.PURGE_AUDIT_LOGS]) {
+  for (const queue of [
+    JOBS.SEND_EMAIL,
+    JOBS.FINALIZE_CAMPAIGN,
+    JOBS.SEND_CONFIRMATION,
+    JOBS.SEND_CONFIRMATION_EMAIL,
+    JOBS.PURGE_AUDIT_LOGS,
+    JOBS.VERIFY_CONTACT_EMAIL,
+  ]) {
     try {
       await boss.createQueue(queue)
       logger.info({ queue }, 'Queue created')
@@ -358,6 +417,19 @@ async function main() {
       } catch (err) {
         logger.error({ err, contactId, jobId: job.id }, 'Confirmation send job failed')
         trackError(err, { action: 'send_confirmation', contactId })
+        throw err
+      }
+    }
+  })
+
+  await boss.work<{ contactId: string }>(JOBS.VERIFY_CONTACT_EMAIL, async (jobs) => {
+    for (const job of jobs) {
+      const { contactId } = job.data
+      try {
+        await processVerifyContactEmail(contactId)
+      } catch (err) {
+        logger.error({ err, contactId, jobId: job.id }, 'Verify contact email job failed')
+        trackError(err, { action: 'verify_contact_email', contactId })
         throw err
       }
     }

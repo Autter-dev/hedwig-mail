@@ -19,6 +19,7 @@ export async function GET() {
       bounced: sql<number>`cast(count(case when ${contacts.status} = 'bounced' then 1 end) as int)`,
       unsubscribed: sql<number>`cast(count(case when ${contacts.status} = 'unsubscribed' then 1 end) as int)`,
       pending: sql<number>`cast(count(case when ${contacts.status} = 'pending' then 1 end) as int)`,
+      undeliverable: sql<number>`cast(count(case when ${contacts.status} = 'undeliverable' then 1 end) as int)`,
     })
     .from(lists)
     .leftJoin(contacts, eq(contacts.listId, lists.id))

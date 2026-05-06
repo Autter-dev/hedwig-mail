@@ -18,7 +18,7 @@ export const contacts = pgTable('contacts', {
   firstName: text('first_name'),
   lastName: text('last_name'),
   metadata: jsonb('metadata').default({}).$type<Record<string, string>>(),
-  status: text('status').notNull().default('active'), // active | pending | bounced | unsubscribed
+  status: text('status').notNull().default('active'), // active | pending | bounced | unsubscribed | undeliverable
   unsubscribeToken: uuid('unsubscribe_token').notNull().defaultRandom().unique(),
   confirmationToken: uuid('confirmation_token').unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

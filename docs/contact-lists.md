@@ -15,7 +15,7 @@ Named lists hold contacts and own the relationship to campaigns. Each list can o
 ## Routes & pages
 
 - `/lists`: index with counts
-- `/lists/[id]`: contact tabs (active, bounced, unsubscribed, pending)
+- `/lists/[id]`: contact tabs (active, bounced, undeliverable, unsubscribed, pending), plus Duplicates and Email Checker
 - `/lists/[id]/upload`: import flow (see [contact-upload.md](contact-upload.md))
 - `/lists/duplicates`: cross-list duplicates view (see [deduplication.md](deduplication.md))
 
@@ -29,6 +29,7 @@ Named lists hold contacts and own the relationship to campaigns. Each list can o
 | PATCH | `/api/internal/lists/[id]` | Session | Update list |
 | DELETE | `/api/internal/lists/[id]` | Session | Delete list (cascades contacts) |
 | GET | `/api/internal/lists/[id]/contacts` | Session | Paginated contacts. Query: `page`, `limit`, `status`, `search` |
+| POST | `/api/internal/lists/[id]/email-check` | Session | Manual SMTP check for one email (body: `{ email }`). Does not persist. |
 | GET | `/api/internal/lists/[id]/export` | Session | Stream CSV of all contacts |
 | GET | `/api/internal/lists/[id]/merge-tags` | Session | Discover available metadata keys |
 
@@ -47,6 +48,6 @@ Public REST equivalents under `/api/v1/lists` are documented in [public-api.md](
 
 ## Notes
 
-- Contact `status` values: `active`, `bounced`, `unsubscribed`, `pending`.
+- Contact `status` values: `active`, `bounced`, `undeliverable`, `unsubscribed`, `pending`. Imports enqueue verification: `invalid` or `risky` SMTP verdicts map to `undeliverable`.
 - `pending` is set when double opt-in is required and the contact has not confirmed yet.
 - Deleting a list cascades to its contacts and their send and event history.

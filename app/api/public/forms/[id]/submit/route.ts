@@ -149,7 +149,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     .limit(1)
 
   if (existing) {
-    if (existing.status === 'unsubscribed' || existing.status === 'bounced') {
+    if (existing.status === 'unsubscribed' || existing.status === 'bounced' || existing.status === 'undeliverable') {
       await recordSubmission('suppressed', existing.id)
       return successResponse
     }

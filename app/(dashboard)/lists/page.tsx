@@ -37,6 +37,7 @@ interface ListWithCounts {
   bounced: number
   unsubscribed: number
   pending: number
+  undeliverable: number
 }
 
 export default function ListsPage() {
@@ -216,6 +217,7 @@ export default function ListsPage() {
                 <TableHead className="text-right">Active</TableHead>
                 <TableHead className="text-right">Pending</TableHead>
                 <TableHead className="text-right">Bounced</TableHead>
+                <TableHead className="text-right">Undeliverable</TableHead>
                 <TableHead className="text-right">Unsubscribed</TableHead>
                 <TableHead>Created Date</TableHead>
                 <TableHead className="w-24">Actions</TableHead>
@@ -253,6 +255,9 @@ export default function ListsPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <span className="text-sm text-red-600 dark:text-red-400 font-medium">{list.bounced ?? 0}</span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className="text-sm text-orange-600 dark:text-orange-400 font-medium">{list.undeliverable ?? 0}</span>
                   </TableCell>
                   <TableCell className="text-right">
                     <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">{list.unsubscribed ?? 0}</span>

@@ -8,6 +8,7 @@ import { bulkContactsSchema } from '@/lib/validations/contacts'
 import { auditFromApiKey, logAudit } from '@/lib/audit'
 import { getQueue, JOBS } from '@/lib/queue'
 import { logger } from '@/lib/logger'
+import { enqueueContactEmailVerification } from '@/lib/email-verify'
 
 export async function POST(
   req: NextRequest,
@@ -39,6 +40,7 @@ export async function POST(
     let updated = 0
     let skipped = 0
     const newContactIds: string[] = []
+    const verifiedContactIds: string[] = []
 
     const batchSize = 500
     const items = parsed.data.contacts
@@ -72,6 +74,7 @@ export async function POST(
           .returning({ id: contacts.id, isInsert: sql<boolean>`xmax = 0` })
 
         for (const row of result) {
+          verifiedContactIds.push(row.id)
           if (row.isInsert) {
             inserted++
             if (requireDoubleOptIn) newContactIds.push(row.id)
@@ -83,6 +86,8 @@ export async function POST(
         skipped += batch.length
       }
     }
+
+    await enqueueContactEmailVerification(verifiedContactIds)
 
     if (requireDoubleOptIn && newContactIds.length > 0) {
       try {

@@ -53,6 +53,14 @@ Each API key has its own `rate_limit_per_minute`. The limiter is implemented as 
 | DELETE | `/api/v1/lists/[listId]/contacts/[id]` | Delete contact |
 | POST | `/api/v1/lists/[listId]/contacts/bulk` | Upsert up to 1000 contacts |
 
+### Email verification
+
+| Method | Path | Description |
+| --- | --- | --- |
+| POST | `/api/v1/email-check` | Check one address (body: `{ to_email, check_gravatar? }`). Returns full checker payload plus `verdict` and `undeliverable` (true when verdict is `invalid` or `risky`). |
+
+New contacts from the bulk or single-contact endpoints are queued for background verification. Invalid or risky addresses become list status `undeliverable`.
+
 ### Campaigns
 
 | Method | Path | Description |

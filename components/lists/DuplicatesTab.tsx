@@ -37,7 +37,13 @@ interface Props {
   onMergedChange?: () => void
 }
 
-const STATUS_RANK: Record<string, number> = { unsubscribed: 2, bounced: 1, active: 0 }
+const STATUS_RANK: Record<string, number> = {
+  unsubscribed: 4,
+  bounced: 3,
+  undeliverable: 2,
+  pending: 1,
+  active: 0,
+}
 
 function previewMerged(group: DupGroup, winnerId: string): {
   firstName: string
@@ -78,6 +84,7 @@ function previewMerged(group: DupGroup, winnerId: string): {
 
 function statusVariant(s: string): 'default' | 'destructive' | 'outline' | 'secondary' {
   if (s === 'bounced') return 'destructive'
+  if (s === 'undeliverable') return 'destructive'
   if (s === 'unsubscribed') return 'outline'
   if (s === 'active') return 'default'
   return 'secondary'

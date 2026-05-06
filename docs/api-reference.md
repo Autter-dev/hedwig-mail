@@ -24,6 +24,7 @@ External integration surface. Returns `{ data, meta, error }`. See [public-api.m
 | PUT | `/api/v1/lists/[listId]/contacts/[id]` | Bearer | `app/api/v1/lists/[listId]/contacts/[id]/route.ts` |
 | DELETE | `/api/v1/lists/[listId]/contacts/[id]` | Bearer | `app/api/v1/lists/[listId]/contacts/[id]/route.ts` |
 | POST | `/api/v1/lists/[listId]/contacts/bulk` | Bearer | `app/api/v1/lists/[listId]/contacts/bulk/route.ts` |
+| POST | `/api/v1/email-check` | Bearer | `app/api/v1/email-check/route.ts` |
 | GET | `/api/v1/campaigns` | Bearer | `app/api/v1/campaigns/route.ts` |
 | GET | `/api/v1/campaigns/[id]` | Bearer | `app/api/v1/campaigns/[id]/route.ts` |
 | GET | `/api/v1/campaigns/[id]/stats` | Bearer | `app/api/v1/campaigns/[id]/stats/route.ts` |
@@ -108,6 +109,7 @@ Session-authenticated, used by the dashboard UI. Not part of the public contract
 | POST | `/api/internal/lists/[id]/upload/confirm` | `app/api/internal/lists/[id]/upload/confirm/route.ts` |
 | GET | `/api/internal/lists/[id]/duplicates` | `app/api/internal/lists/[id]/duplicates/route.ts` |
 | POST | `/api/internal/lists/[id]/duplicates/merge` | `app/api/internal/lists/[id]/duplicates/merge/route.ts` |
+| POST | `/api/internal/lists/[id]/email-check` | `app/api/internal/lists/[id]/email-check/route.ts` |
 | GET | `/api/internal/duplicates/cross-list` | `app/api/internal/duplicates/cross-list/route.ts` |
 
 ### Contacts
