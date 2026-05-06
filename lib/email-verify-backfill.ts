@@ -4,8 +4,10 @@ import { db } from '@/lib/db'
 import { contacts } from '@/lib/db/schema'
 import { JOBS } from '@/lib/queue'
 import { logger } from '@/lib/logger'
+import { parseEmailVerifyEnqueueStaggerMs } from '@/lib/email-verify-rate'
 
 const CHUNK = 200
+const INSERT_CHUNK = 400
 
 /**
  * Enqueues VERIFY_CONTACT_EMAIL for contacts that have never been scanned
@@ -42,9 +44,21 @@ export async function runEmailVerifyBackfillOnWorkerStart(boss: PgBoss): Promise
     return 0
   }
 
-  for (let i = 0; i < ids.length; i += CHUNK) {
-    const slice = ids.slice(i, i + CHUNK)
-    await Promise.all(slice.map((contactId) => boss.send(JOBS.VERIFY_CONTACT_EMAIL, { contactId })))
+  const staggerMs = parseEmailVerifyEnqueueStaggerMs()
+  if (staggerMs <= 0) {
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK)
+      await Promise.all(slice.map((contactId) => boss.send(JOBS.VERIFY_CONTACT_EMAIL, { contactId })))
+    }
+  } else {
+    const now = Date.now()
+    const jobs = ids.map((contactId, index) => ({
+      data: { contactId },
+      startAfter: new Date(now + index * staggerMs),
+    }))
+    for (let i = 0; i < jobs.length; i += INSERT_CHUNK) {
+      await boss.insert(JOBS.VERIFY_CONTACT_EMAIL, jobs.slice(i, i + INSERT_CHUNK))
+    }
   }
 
   logger.info({ enqueued: ids.length, max }, 'Email verify backfill enqueued (worker startup)')

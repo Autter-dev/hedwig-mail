@@ -12,6 +12,11 @@ import { sendConfirmation } from './lib/email/sendConfirmation'
 import { logAudit, systemAuditCtx } from './lib/audit'
 import { ensureEmailVerifySmtpDefaults, getEmailVerifySmtpIdentity } from './lib/settings/email-verify-smtp'
 import { runEmailVerifyBackfillOnWorkerStart } from './lib/email-verify-backfill'
+import {
+  parseEmailVerifyMinGapMs,
+  parseEmailVerifyWorkerConcurrency,
+  sleepEmailVerifyGap,
+} from './lib/email-verify-rate'
 
 const APP_URL = process.env.APP_URL!
 const TRACKING_URL = (process.env.TRACKING_URL || process.env.APP_URL || '').replace(/\/$/, '')
@@ -156,15 +161,16 @@ async function processSendJob(sendId: string, campaignId: string) {
   trackEvent('email_send_complete', { sendId, campaignId, providerType: provider.type, durationMs })
 }
 
-async function processVerifyContactEmail(contactId: string) {
+/** Returns true when an SMTP probe ran (used to pace outbound checks). */
+async function processVerifyContactEmail(contactId: string): Promise<boolean> {
   const [contact] = await db.select().from(contacts).where(eq(contacts.id, contactId))
   if (!contact) {
     logger.warn({ contactId }, 'Verify email: contact not found')
-    return
+    return false
   }
   if (contact.status === 'unsubscribed' || contact.status === 'bounced') {
     logger.info({ contactId, status: contact.status }, 'Verify email: skipped terminal status')
-    return
+    return false
   }
 
   const { fromEmail, helloName } = await getEmailVerifySmtpIdentity()
@@ -194,7 +200,7 @@ async function processVerifyContactEmail(contactId: string) {
     } else {
       await db.update(contacts).set({ metadata, updatedAt: new Date() }).where(eq(contacts.id, contactId))
     }
-    return
+    return true
   }
 
   if (verdict === 'invalid' || verdict === 'risky') {
@@ -210,6 +216,7 @@ async function processVerifyContactEmail(contactId: string) {
 
   logger.info({ contactId, verdict, email: contact.email }, 'Contact email verification complete')
   trackEvent('contact_email_verified', { contactId, verdict })
+  return true
 }
 
 async function processConfirmationJob(contactId: string, formId: string) {
@@ -434,18 +441,25 @@ async function main() {
     }
   })
 
-  await boss.work<{ contactId: string }>(JOBS.VERIFY_CONTACT_EMAIL, async (jobs) => {
-    for (const job of jobs) {
-      const { contactId } = job.data
-      try {
-        await processVerifyContactEmail(contactId)
-      } catch (err) {
-        logger.error({ err, contactId, jobId: job.id }, 'Verify contact email job failed')
-        trackError(err, { action: 'verify_contact_email', contactId })
-        throw err
+  const verifyConcurrency = parseEmailVerifyWorkerConcurrency()
+  await boss.work<{ contactId: string }>(
+    JOBS.VERIFY_CONTACT_EMAIL,
+    { localConcurrency: verifyConcurrency, batchSize: 1 },
+    async (jobs) => {
+      for (const job of jobs) {
+        const { contactId } = job.data
+        try {
+          const probed = await processVerifyContactEmail(contactId)
+          if (probed) await sleepEmailVerifyGap()
+        } catch (err) {
+          await sleepEmailVerifyGap()
+          logger.error({ err, contactId, jobId: job.id }, 'Verify contact email job failed')
+          trackError(err, { action: 'verify_contact_email', contactId })
+          throw err
+        }
       }
-    }
-  })
+    },
+  )
 
   // Periodic audit log retention purge
   await boss.work<Record<string, never>>(JOBS.PURGE_AUDIT_LOGS, async (jobs) => {
@@ -482,7 +496,14 @@ async function main() {
     logger.warn({ err }, 'Failed to schedule audit log retention; will continue without it')
   }
 
-  logger.info('Worker ready, processing jobs')
+  logger.info(
+    {
+      campaignSendConcurrency: CONCURRENCY,
+      emailVerifyWorkerConcurrency: verifyConcurrency,
+      emailVerifyMinGapMs: parseEmailVerifyMinGapMs(),
+    },
+    'Worker ready, processing jobs',
+  )
   trackEvent('worker_started', { concurrency: CONCURRENCY })
 
   process.on('SIGTERM', async () => {

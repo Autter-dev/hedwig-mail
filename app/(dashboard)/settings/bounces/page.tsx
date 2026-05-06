@@ -118,10 +118,15 @@ export default function BouncesSettingsPage() {
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
-            On the worker, set EMAIL_VERIFY_BACKFILL_ON_START=true (and optionally EMAIL_VERIFY_BACKFILL_MAX) so
-            contacts that were never scanned get VERIFY_CONTACT_EMAIL jobs when the worker starts (for example after a
-            Railway deploy).
+          <p className="text-xs text-muted-foreground space-y-2">
+            <span className="block">
+              Worker: EMAIL_VERIFY_BACKFILL_ON_START=true (and optionally EMAIL_VERIFY_BACKFILL_MAX) queues
+              VERIFY_CONTACT_EMAIL for contacts missing a verification timestamp when the worker starts.
+            </span>
+            <span className="block">
+              Throttle probes with EMAIL_VERIFY_MIN_GAP_MS (default 2500), EMAIL_VERIFY_WORKER_CONCURRENCY (default 1,
+              max 4), and optional EMAIL_VERIFY_ENQUEUE_STAGGER_MS for staggered bulk enqueue and backfill.
+            </span>
           </p>
 
           <div className="flex justify-end">
