@@ -203,6 +203,8 @@ Manual `POST /api/internal/lists/[id]/email-check` and `POST /api/v1/email-check
 
 Checker calls are made through the local TypeScript client (`lib/email-checker/checkEmail.ts`) to an external checker API configured via `EMAIL_CHECKER_BASE_URL` (endpoint `/v1/check_email`). If configured, `EMAIL_CHECKER_API_SECRET` is sent as `x-api-secret`.
 
+Reference checker service implementation: [sagnik11/email-checker](https://github.com/sagnik11/email-checker).
+
 ---
 
 ## Auth handler

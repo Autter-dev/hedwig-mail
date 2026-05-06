@@ -65,6 +65,8 @@ Background verification runs in the **worker** (`verify-contact-email` queue). T
 
 SMTP identity for checks comes from **Settings > Bounces** (MAIL FROM and hello name). This app calls an external checker API (`EMAIL_CHECKER_BASE_URL`, endpoint `/v1/check_email`) through the local TypeScript client in `lib/email-checker/checkEmail.ts`.
 
+Reference checker service implementation: [sagnik11/email-checker](https://github.com/sagnik11/email-checker).
+
 ### Campaigns
 
 | Method | Path | Description |

@@ -62,5 +62,6 @@ Startup backfill is enabled by default and queues checks for contacts missing a 
 Optional `EMAIL_VERIFY_ENQUEUE_STAGGER_MS` spreads job `startAfter` times when bulk-enqueueing or during startup backfill (default 0: jobs become eligible immediately; pacing still comes from the worker).
 
 This app uses a local TypeScript checker client (`lib/email-checker/checkEmail.ts`) that calls an external checker API (`EMAIL_CHECKER_BASE_URL`, endpoint `/v1/check_email`).
+Reference checker service implementation: [sagnik11/email-checker](https://github.com/sagnik11/email-checker).
 
 Dashboard **Settings > Bounces** stores the SMTP MAIL FROM and hello name used for background checks and manual checks. Those values are read from app settings via `getEmailVerifySmtpIdentity()`. See [public-api.md](public-api.md) for the public `email-check` endpoint, which runs on demand and is separate from the background queue.
