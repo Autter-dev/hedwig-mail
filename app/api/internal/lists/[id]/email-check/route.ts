@@ -3,6 +3,7 @@ import { db } from '@/lib/db'
 import { lists } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { checkEmail } from '@/lib/email-checker/checkEmail'
+import { getEmailVerifySmtpIdentity } from '@/lib/settings/email-verify-smtp'
 import { internalListEmailCheckSchema } from '@/lib/validations/email-check'
 
 export async function POST(
@@ -29,8 +30,11 @@ export async function POST(
     return NextResponse.json({ error: 'List not found' }, { status: 404 })
   }
 
+  const { fromEmail, helloName } = await getEmailVerifySmtpIdentity()
   const result = await checkEmail({
     to_email: parsed.data.email.trim().toLowerCase(),
+    from_email: fromEmail,
+    hello_name: helloName,
     check_gravatar: false,
   })
 

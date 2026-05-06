@@ -22,6 +22,8 @@ export async function getAppSettings(): Promise<AppSettings> {
 export interface AppSettingsPatch {
   confirmationFromEmail?: string | null
   confirmationFromName?: string | null
+  emailVerifyFromEmail?: string | null
+  emailVerifyHelloName?: string | null
   unsubscribePage?: UnsubscribePageContent | null
 }
 

@@ -2,7 +2,7 @@ import { PgBoss } from 'pg-boss'
 import { db } from './lib/db'
 import { campaigns, campaignSends, contacts, emailProviders, forms } from './lib/db/schema'
 import { checkEmail } from './lib/email-checker/checkEmail'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { createProviderAdapter } from './lib/providers/factory'
 import { renderTemplate, renderPlainText } from './lib/renderer'
 import { JOBS } from './lib/queue'
@@ -10,7 +10,8 @@ import { logger, trackEvent, trackError, shutdownTracking } from './lib/logger'
 import { isSuppressed } from './lib/suppressions'
 import { sendConfirmation } from './lib/email/sendConfirmation'
 import { logAudit, systemAuditCtx } from './lib/audit'
-import { sql } from 'drizzle-orm'
+import { ensureEmailVerifySmtpDefaults, getEmailVerifySmtpIdentity } from './lib/settings/email-verify-smtp'
+import { runEmailVerifyBackfillOnWorkerStart } from './lib/email-verify-backfill'
 
 const APP_URL = process.env.APP_URL!
 const TRACKING_URL = (process.env.TRACKING_URL || process.env.APP_URL || '').replace(/\/$/, '')
@@ -166,7 +167,12 @@ async function processVerifyContactEmail(contactId: string) {
     return
   }
 
-  const result = await checkEmail({ to_email: contact.email })
+  const { fromEmail, helloName } = await getEmailVerifySmtpIdentity()
+  const result = await checkEmail({
+    to_email: contact.email,
+    from_email: fromEmail,
+    hello_name: helloName,
+  })
   const verdict = result.is_reachable
 
   const prevMeta = (contact.metadata as Record<string, string> | null) ?? {}
@@ -310,6 +316,12 @@ async function main() {
     }
   }
   logger.info('All queues ready')
+
+  await ensureEmailVerifySmtpDefaults()
+  const backfillEnqueued = await runEmailVerifyBackfillOnWorkerStart(boss)
+  if (backfillEnqueued > 0) {
+    logger.info({ enqueued: backfillEnqueued }, 'Email verification backfill queued at worker startup')
+  }
 
   // Process individual email send jobs
   await boss.work<{ sendId: string; campaignId: string }>(

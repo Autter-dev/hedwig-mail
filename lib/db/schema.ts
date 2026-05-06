@@ -245,6 +245,8 @@ export const appSettings = pgTable('app_settings', {
   id: text('id').primaryKey().default('singleton'),
   confirmationFromEmail: text('confirmation_from_email'),
   confirmationFromName: text('confirmation_from_name'),
+  emailVerifyFromEmail: text('email_verify_from_email'),
+  emailVerifyHelloName: text('email_verify_hello_name'),
   unsubscribePage: jsonb('unsubscribe_page').$type<UnsubscribePageContent | null>(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
