@@ -333,7 +333,7 @@ docker run -p 3000:3000 --env-file .env hedwig-mail
 Run the worker as a separate container:
 
 ```bash
-docker run --env-file .env hedwig-mail node -r tsx/cjs worker.ts
+docker run --env-file .env hedwig-mail node -r tsx/cjs worker-entry.ts
 ```
 
 Run migrations before first start:
@@ -348,7 +348,7 @@ docker run --env-file .env hedwig-mail node -r tsx/cjs lib/db/migrate.ts
 2. Railway auto-detects the Dockerfile
 3. Set all environment variables in the Railway dashboard
 4. Add a PostgreSQL plugin and update `DATABASE_URL`
-5. For the worker, create a second service from the same repo with start command: `node -r tsx/cjs worker.ts`
+5. For the worker, create a second service from the same repo with start command: `node -r tsx/cjs worker-entry.ts`
 6. For S3, use an external service (AWS S3, Cloudflare R2, etc.)
 
 For a full beginner-friendly setup with `web` + `worker` + `postgres` + `minio`, use [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md).
@@ -359,7 +359,7 @@ For a full beginner-friendly setup with `web` + `worker` + `postgres` + `minio`,
 2. Render auto-detects the Dockerfile
 3. Set environment variables in the dashboard
 4. Add a Render PostgreSQL database and update `DATABASE_URL`
-5. Create a Background Worker service for the worker process with start command: `node -r tsx/cjs worker.ts`
+5. Create a Background Worker service for the worker process with start command: `node -r tsx/cjs worker-entry.ts`
 
 ### Fly.io
 

@@ -208,10 +208,12 @@ Railway runs the app and worker as separate services backed by a managed Postgre
 
 4. **Add a worker service.** From the project canvas, "New Service", "GitHub Repo", select the same repo. Open the worker service settings:
 
-   - **Start Command**: `node -r tsx/cjs worker.ts`
+   - **Start Command**: `node -r tsx/cjs worker-entry.ts`
    - **Variables**: reference the same Postgres `DATABASE_URL` and copy across `ENCRYPTION_KEY`, `APP_URL`, the `S3_*` vars, and `WORKER_CONCURRENCY`. Use Railway's variable references so updates flow to both services.
 
-5. **Run migrations.** Easiest path: from your local machine with the Railway CLI:
+5. **Migrations are startup-safe.** The app Docker `CMD` runs migrations before boot, and `worker-entry.ts` does the same for the worker. Migration execution uses a Postgres advisory lock, so concurrent deploys from app and worker cannot race.
+
+6. **Optional manual migration.** Easiest path: from your local machine with the Railway CLI:
 
    ```bash
    npm install -g @railway/cli
@@ -222,9 +224,9 @@ Railway runs the app and worker as separate services backed by a managed Postgre
 
    The CLI runs the command locally with Railway's env vars injected, including the production `DATABASE_URL`.
 
-6. **Custom domain (optional).** In the app service settings, add a custom domain. Once the DNS record is verified, update `APP_URL` and `NEXTAUTH_URL` to the new domain. Do this before sending real campaigns, since `APP_URL` is baked into sent email links.
+7. **Custom domain (optional).** In the app service settings, add a custom domain. Once the DNS record is verified, update `APP_URL` and `NEXTAUTH_URL` to the new domain. Do this before sending real campaigns, since `APP_URL` is baked into sent email links.
 
-7. **Sign in** at your `APP_URL` with the admin credentials you set.
+8. **Sign in** at your `APP_URL` with the admin credentials you set.
 
 ## Email deliverability
 

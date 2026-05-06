@@ -60,7 +60,7 @@ Do not set custom domain yet if you are rushing, you can do that later.
 2. Set start command to:
 
 ```bash
-node -r tsx/cjs worker.ts
+node -r tsx/cjs worker-entry.ts
 ```
 
 3. Do not expose this service publicly.
@@ -165,15 +165,19 @@ MINIO_ROOT_USER=minioadmin
 MINIO_ROOT_PASSWORD=<MINIO_PASSWORD>
 ```
 
-## Step 6: Run Database Migrations Once
+## Step 6: Migration strategy on Railway
 
-Run this once in Railway (one-off command or service shell in repo context):
+This repo uses a safe startup migration pattern:
+
+- `web` runs `lib/db/migrate.ts` before `server.js` in the Docker `CMD`.
+- `worker` should start with `worker-entry.ts`, which also runs `lib/db/migrate.ts` before loading `worker.ts`.
+- `lib/db/migrate.ts` takes a Postgres advisory lock, so concurrent boots from multiple services do not race.
+
+You can still run migrations manually when needed:
 
 ```bash
 node -r tsx/cjs lib/db/migrate.ts
 ```
-
-If migrations fail, do not continue. Fix that first.
 
 ## Step 7: Create MinIO Bucket
 

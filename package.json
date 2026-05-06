@@ -9,8 +9,10 @@
     "lint": "next lint",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx --env-file=.env.local lib/db/migrate.ts",
+    "db:migrate:prod": "tsx lib/db/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "worker": "tsx --env-file=.env.local worker.ts"
+    "worker": "tsx --env-file=.env.local worker.ts",
+    "worker:bootstrap": "tsx --env-file=.env.local worker-entry.ts"
   },
   "dependencies": {
     "@anatine/zod-openapi": "^2.2.8",

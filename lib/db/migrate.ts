@@ -1,11 +1,7 @@
-import { migrate } from 'drizzle-orm/node-postgres/migrator'
-import { db, pool } from './index'
+import { runMigrationsWithLock } from './run-migrations'
 
 async function main() {
-  console.log('Running migrations...')
-  await migrate(db, { migrationsFolder: './drizzle/migrations' })
-  console.log('Migrations complete.')
-  await pool.end()
+  await runMigrationsWithLock()
 }
 
 main().catch((err) => {
