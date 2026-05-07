@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { useToast } from '@/components/ui/use-toast'
-import { cn } from '@/lib/utils'
 
 type ReachabilityVerdict = 'safe' | 'invalid' | 'risky' | 'unknown'
 
