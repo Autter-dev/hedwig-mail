@@ -43,6 +43,7 @@ export const campaigns = pgTable('campaigns', {
   subject: text('subject').notNull().default(''),
   fromName: text('from_name').notNull().default(''),
   fromEmail: text('from_email').notNull().default(''),
+  replyToEmail: text('reply_to_email'),
   listId: uuid('list_id').notNull().references(() => lists.id),
   providerId: uuid('provider_id').references(() => emailProviders.id),
   templateJson: jsonb('template_json').notNull().default([]).$type<Block[]>(),

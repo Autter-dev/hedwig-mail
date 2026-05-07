@@ -2,6 +2,15 @@ import { Resend } from 'resend'
 import type { EmailProviderAdapter, SendOptions, ProviderConfig } from './types'
 import { logger, trackEvent, trackError } from '@/lib/logger'
 
+function formatFromAddress(fromName: string, fromEmail: string): string {
+  const trimmedName = fromName.trim()
+  if (!trimmedName) return fromEmail
+
+  // Prevent header injection and ensure the display name is preserved.
+  const safeName = trimmedName.replace(/[\r\n]+/g, ' ').replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  return `"${safeName}" <${fromEmail}>`
+}
+
 export class ResendAdapter implements EmailProviderAdapter {
   private client: Resend
 
@@ -12,12 +21,14 @@ export class ResendAdapter implements EmailProviderAdapter {
 
   async send(options: SendOptions): Promise<{ messageId: string }> {
     const startTime = Date.now()
-    logger.info({ to: options.to, from: options.from, subject: options.subject }, 'Resend: sending email')
+    const from = formatFromAddress(options.fromName, options.from)
+    logger.info({ to: options.to, from, subject: options.subject }, 'Resend: sending email')
 
     const { data, error } = await this.client.emails.send({
-      from: `${options.fromName} <${options.from}>`,
+      from,
       to: options.to,
       subject: options.subject,
+      replyTo: options.replyTo,
       html: options.html,
       text: options.text,
       headers: options.headers,

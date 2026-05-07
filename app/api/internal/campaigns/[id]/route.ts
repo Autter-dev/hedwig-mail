@@ -33,6 +33,7 @@ export async function PATCH(
   if ('subject' in body) updateData.subject = body.subject
   if ('fromName' in body) updateData.fromName = body.fromName
   if ('fromEmail' in body) updateData.fromEmail = body.fromEmail
+  if ('replyToEmail' in body) updateData.replyToEmail = body.replyToEmail
   if ('templateJson' in body) updateData.templateJson = body.templateJson
   if ('templateHtml' in body) updateData.templateHtml = body.templateHtml
   if ('listId' in body) updateData.listId = body.listId

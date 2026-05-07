@@ -54,6 +54,13 @@ export async function POST(
     logger.warn({ campaignId: params.id, fromEmail: campaign.fromEmail }, 'Campaign from email is missing or invalid')
     return NextResponse.json({ error: 'Campaign "From email" is missing or invalid. Set a complete sender address (e.g. you@yourdomain.com) and save before sending.' }, { status: 400 })
   }
+  if (campaign.replyToEmail && !emailRegex.test(campaign.replyToEmail)) {
+    logger.warn({ campaignId: params.id, replyToEmail: campaign.replyToEmail }, 'Campaign reply-to email is invalid')
+    return NextResponse.json(
+      { error: 'Campaign "Reply-To" is invalid. Set a complete reply-to address (e.g. replies@yourdomain.com) and save before sending.' },
+      { status: 400 },
+    )
+  }
   if (!campaign.fromName || campaign.fromName.trim() === '') {
     logger.warn({ campaignId: params.id }, 'Campaign missing fromName')
     return NextResponse.json({ error: 'Campaign is missing a from name' }, { status: 400 })

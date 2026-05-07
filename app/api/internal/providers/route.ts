@@ -9,14 +9,17 @@ import { requireAdmin } from '@/lib/auth-helpers'
 interface ProviderConfig {
   apiKey?: string
   region?: string
+  replyToEmail?: string
 }
 
 function safeProviderView(provider: typeof emailProviders.$inferSelect) {
   let maskedKey: string | undefined
   let region: string | undefined
+  let replyToEmail: string | undefined
 
   try {
     const config: ProviderConfig = JSON.parse(decrypt(provider.configEncrypted))
+    replyToEmail = config.replyToEmail
 
     if (provider.type === 'resend' && config.apiKey) {
       const last4 = config.apiKey.slice(-4)
@@ -42,6 +45,7 @@ function safeProviderView(provider: typeof emailProviders.$inferSelect) {
     createdAt: provider.createdAt,
     ...(maskedKey !== undefined ? { maskedKey } : {}),
     ...(region !== undefined ? { region } : {}),
+    ...(replyToEmail !== undefined ? { replyToEmail } : {}),
   }
 }
 
@@ -73,7 +77,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: message }, { status: 400 })
   }
 
-  const { name, type, apiKey, region, rateLimitPerSecond } = parsed.data
+  const { name, type, apiKey, region, rateLimitPerSecond, replyToEmail } = parsed.data
 
   if (type === 'ses' && !region) {
     return NextResponse.json({ error: 'Region is required for SES providers' }, { status: 400 })
@@ -81,10 +85,10 @@ export async function POST(req: NextRequest) {
 
   let config: ProviderConfig
   if (type === 'resend') {
-    config = { apiKey }
+    config = { apiKey, replyToEmail }
   } else {
     // ses: store as "accessKeyId:secretKey" so SESAdapter can split on ':'
-    config = { apiKey, region }
+    config = { apiKey, region, replyToEmail }
   }
 
   let configEncrypted: string

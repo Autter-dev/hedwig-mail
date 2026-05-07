@@ -4,12 +4,14 @@ import { campaigns, campaignSends, contacts, emailProviders, forms } from './lib
 import { checkEmail } from './lib/email-checker/checkEmail'
 import { eq, sql } from 'drizzle-orm'
 import { createProviderAdapter } from './lib/providers/factory'
+import type { ProviderConfig } from './lib/providers/types'
 import { renderTemplate, renderPlainText } from './lib/renderer'
 import { JOBS } from './lib/queue'
 import { logger, trackEvent, trackError, shutdownTracking } from './lib/logger'
 import { isSuppressed } from './lib/suppressions'
 import { sendConfirmation } from './lib/email/sendConfirmation'
 import { logAudit, systemAuditCtx } from './lib/audit'
+import { decrypt } from './lib/encryption'
 import { ensureEmailVerifySmtpDefaults, getEmailVerifySmtpIdentity } from './lib/settings/email-verify-smtp'
 import { runEmailVerifyBackfillOnWorkerStart } from './lib/email-verify-backfill'
 import {
@@ -92,6 +94,17 @@ async function processSendJob(sendId: string, campaignId: string) {
     'Preparing email for send'
   )
 
+  const providerDefaultReplyTo = (() => {
+    try {
+      const config: ProviderConfig = JSON.parse(decrypt(provider.configEncrypted))
+      return config.replyToEmail?.trim() || undefined
+    } catch {
+      return undefined
+    }
+  })()
+
+  const effectiveReplyTo = campaign.replyToEmail?.trim() || providerDefaultReplyTo
+
   const adapter = createProviderAdapter(provider.type, provider.configEncrypted)
 
   const unsubscribeUrl = `${TRACKING_URL}/unsubscribe/${contact.unsubscribeToken}`
@@ -139,6 +152,7 @@ async function processSendJob(sendId: string, campaignId: string) {
     from: campaign.fromEmail,
     fromName: campaign.fromName,
     subject: campaign.subject,
+    replyTo: effectiveReplyTo,
     html,
     text,
     headers: {

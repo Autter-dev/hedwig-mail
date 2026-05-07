@@ -38,6 +38,7 @@ interface Provider {
   isDefault: boolean
   rateLimitPerSecond: number
   fromDomain?: string
+  replyToEmail?: string
 }
 
 interface AddProviderForm {
@@ -47,6 +48,7 @@ interface AddProviderForm {
   accessKeyId: string
   secretAccessKey: string
   region: string
+  replyToEmail: string
 }
 
 const defaultForm: AddProviderForm = {
@@ -56,6 +58,7 @@ const defaultForm: AddProviderForm = {
   accessKeyId: "",
   secretAccessKey: "",
   region: "",
+  replyToEmail: "",
 }
 
 export default function ProvidersPage() {
@@ -132,6 +135,10 @@ export default function ProvidersPage() {
       } else if (form.type === "ses") {
         body.apiKey = `${form.accessKeyId.trim()}:${form.secretAccessKey.trim()}`
         body.region = form.region.trim()
+      }
+
+      if (form.replyToEmail.trim()) {
+        body.replyToEmail = form.replyToEmail.trim()
       }
 
       const res = await fetch("/api/internal/providers", {
@@ -265,6 +272,16 @@ export default function ProvidersPage() {
                     <SelectItem value="ses">Amazon SES</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="provider-reply-to">Default Reply-To (optional)</Label>
+                <Input
+                  id="provider-reply-to"
+                  placeholder="replies@yourdomain.com"
+                  value={form.replyToEmail}
+                  onChange={(e) => handleFormChange("replyToEmail", e.target.value)}
+                />
               </div>
 
               {form.type === "resend" && (

@@ -22,10 +22,12 @@ function encodeAddress(name: string, email: string): string {
 
 function buildRawMime(options: SendOptions): string {
   const boundary = `----=_HedwigMail_${randomBytes(12).toString('hex')}`
+  const replyTo = options.replyTo?.trim()
   const headers: Record<string, string> = {
     From: encodeAddress(options.fromName, options.from),
     To: options.to,
     Subject: encodeHeaderValue(options.subject),
+    ...(replyTo ? { 'Reply-To': replyTo } : {}),
     'MIME-Version': '1.0',
     'Content-Type': `multipart/alternative; boundary="${boundary}"`,
     ...(options.headers || {}),

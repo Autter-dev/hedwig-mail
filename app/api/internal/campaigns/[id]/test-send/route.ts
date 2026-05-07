@@ -3,9 +3,11 @@ import { db } from '@/lib/db'
 import { campaigns, emailProviders } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import { createProviderAdapter } from '@/lib/providers/factory'
+import type { ProviderConfig } from '@/lib/providers/types'
 import { renderTemplate, renderPlainText } from '@/lib/renderer'
 import { logger, trackEvent, trackError } from '@/lib/logger'
 import { auditFromSession, logAudit } from '@/lib/audit'
+import { decrypt } from '@/lib/encryption'
 
 export async function POST(
   req: NextRequest,
@@ -110,6 +112,14 @@ export async function POST(
       )
     }
 
+    if (campaign.replyToEmail && !emailRegex.test(campaign.replyToEmail)) {
+      logger.warn({ campaignId: params.id, replyToEmail: campaign.replyToEmail }, 'Campaign reply-to email is invalid')
+      return NextResponse.json(
+        { error: 'Campaign "Reply-To" is invalid. Set a complete reply-to address (e.g. replies@yourdomain.com) in the editor and save before sending.' },
+        { status: 400 }
+      )
+    }
+
     if (!campaign.fromName || !campaign.fromName.trim()) {
       logger.warn({ campaignId: params.id }, 'Campaign from name is missing')
       return NextResponse.json(
@@ -122,6 +132,17 @@ export async function POST(
       { campaignId: params.id, recipients, providerType: provider.type, subject: campaign.subject, hasContent },
       'Rendering template and sending test email(s)'
     )
+
+    const providerDefaultReplyTo = (() => {
+      try {
+        const config: ProviderConfig = JSON.parse(decrypt(provider.configEncrypted))
+        return config.replyToEmail?.trim() || undefined
+      } catch {
+        return undefined
+      }
+    })()
+
+    const effectiveReplyTo = campaign.replyToEmail?.trim() || providerDefaultReplyTo
 
     const adapter = createProviderAdapter(provider.type, provider.configEncrypted)
 
@@ -158,6 +179,7 @@ export async function POST(
           from: campaign.fromEmail,
           fromName: campaign.fromName,
           subject: campaign.subject || 'Test Email',
+          replyTo: effectiveReplyTo,
           html,
           text: renderPlainText(html),
           headers: {

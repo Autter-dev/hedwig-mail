@@ -40,6 +40,7 @@ interface Campaign {
   subject: string
   fromName: string
   fromEmail: string
+  replyToEmail: string | null
   listId: string
   providerId: string | null
   templateJson: Block[]
@@ -65,6 +66,7 @@ export default function EditorPage() {
   const [subject, setSubject] = useState("")
   const [fromName, setFromName] = useState("")
   const [fromEmail, setFromEmail] = useState("")
+  const [replyToEmail, setReplyToEmail] = useState("")
   const [providerId, setProviderId] = useState<string | null>(null)
   const [blocks, setBlocks] = useState<Block[]>([])
   const [templateHtml, setTemplateHtml] = useState("")
@@ -104,6 +106,7 @@ export default function EditorPage() {
       setSubject(data.subject || "")
       setFromName(data.fromName || "")
       setFromEmail(data.fromEmail || "")
+      setReplyToEmail(data.replyToEmail || "")
       setProviderId(data.providerId || null)
       setBlocks(data.templateJson || [])
       setTemplateHtml(data.templateHtml || "")
@@ -161,6 +164,7 @@ export default function EditorPage() {
           subject,
           fromName,
           fromEmail,
+          replyToEmail: replyToEmail || null,
           providerId,
           templateJson: blocks,
           templateHtml: templateHtml || null,
@@ -174,7 +178,7 @@ export default function EditorPage() {
     } finally {
       setSaving(false)
     }
-  }, [campaign, campaignId, name, subject, fromName, fromEmail, providerId, blocks, templateHtml, editorMode, toast])
+  }, [campaign, campaignId, name, subject, fromName, fromEmail, replyToEmail, providerId, blocks, templateHtml, editorMode, toast])
 
   // Auto-save every 30 seconds
   useEffect(() => {
@@ -194,7 +198,7 @@ export default function EditorPage() {
     if (campaign) {
       hasChangesRef.current = true
     }
-  }, [name, subject, fromName, fromEmail, providerId, blocks, templateHtml, campaign])
+  }, [name, subject, fromName, fromEmail, replyToEmail, providerId, blocks, templateHtml, campaign])
 
   const handleTestSend = async () => {
     if (!testEmail) return
@@ -423,7 +427,7 @@ export default function EditorPage() {
             HTML Code
           </button>
         </div>
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div>
             <Label className="text-xs text-muted-foreground">Subject Line</Label>
             <Input
@@ -448,6 +452,15 @@ export default function EditorPage() {
               value={fromEmail}
               onChange={(e) => setFromEmail(e.target.value)}
               placeholder="you@example.com"
+              className="h-8 text-sm"
+            />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Reply-To (optional)</Label>
+            <Input
+              value={replyToEmail}
+              onChange={(e) => setReplyToEmail(e.target.value)}
+              placeholder="replies@example.com"
               className="h-8 text-sm"
             />
           </div>
