@@ -357,6 +357,9 @@ docker run --env-file .env hedwig-mail node -r tsx/cjs lib/db/migrate.ts
 
 For a full beginner-friendly setup with `web` + `worker` + `postgres` + `minio`, use [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md).
 
+If outbound SMTP is blocked on your plan, deploy the checker service on Fly and point this app to it:
+[external checker on Fly guide](./docs/external-checker-fly.md).
+
 ### Render
 
 1. Create a new Web Service from your repository
