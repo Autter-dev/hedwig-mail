@@ -106,36 +106,50 @@ export async function POST(
 
     const sent: string[] = []
     const failed: { email: string; error: string }[] = []
+    const buildSendOptions = (recipient: string) => {
+      const html = renderTemplate({
+        blocks: template.templateJson,
+        contact: { email: recipient, first_name: 'Test', last_name: 'User', unsubscribe_url: testUnsubscribeUrl },
+        sendId: 'test-' + Date.now(),
+        appUrl,
+        trackingUrl,
+        unsubscribeUrl: testUnsubscribeUrl,
+        rawHtml: template.templateHtml,
+      })
 
-    for (const recipient of recipients) {
+      return {
+        to: recipient,
+        from: template.fromEmail,
+        fromName: template.fromName,
+        subject: template.subject || 'Test Email',
+        html,
+        text: renderPlainText(html),
+        headers: {
+          'List-Unsubscribe': `<${testUnsubscribeUrl}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      }
+    }
+
+    if (provider.type === 'resend' && adapter.sendBatch && recipients.length > 1) {
       try {
-        const html = renderTemplate({
-          blocks: template.templateJson,
-          contact: { email: recipient, first_name: 'Test', last_name: 'User', unsubscribe_url: testUnsubscribeUrl },
-          sendId: 'test-' + Date.now(),
-          appUrl,
-          trackingUrl,
-          unsubscribeUrl: testUnsubscribeUrl,
-          rawHtml: template.templateHtml,
-        })
-
-        await adapter.send({
-          to: recipient,
-          from: template.fromEmail,
-          fromName: template.fromName,
-          subject: template.subject || 'Test Email',
-          html,
-          text: renderPlainText(html),
-          headers: {
-            'List-Unsubscribe': `<${testUnsubscribeUrl}>`,
-            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          },
-        })
-        sent.push(recipient)
+        await adapter.sendBatch(recipients.map(buildSendOptions))
+        sent.push(...recipients)
       } catch (sendErr) {
-        const message = sendErr instanceof Error ? sendErr.message : 'Send failed'
-        logger.error({ recipient, err: sendErr }, 'Template test send failed')
-        failed.push({ email: recipient, error: message })
+        const message = sendErr instanceof Error ? sendErr.message : 'Batch send failed'
+        logger.error({ recipients, err: sendErr }, 'Resend batch template test send failed')
+        failed.push(...recipients.map((email) => ({ email, error: message })))
+      }
+    } else {
+      for (const recipient of recipients) {
+        try {
+          await adapter.send(buildSendOptions(recipient))
+          sent.push(recipient)
+        } catch (sendErr) {
+          const message = sendErr instanceof Error ? sendErr.message : 'Send failed'
+          logger.error({ recipient, err: sendErr }, 'Template test send failed')
+          failed.push({ email: recipient, error: message })
+        }
       }
     }
 

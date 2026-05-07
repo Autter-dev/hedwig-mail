@@ -56,6 +56,7 @@ Copy `.env.example` to `.env` and fill these in:
 | `S3_FORCE_PATH_STYLE` | `true` for MinIO and most non-AWS providers. Remove for AWS S3. |
 | `ENCRYPTION_KEY` | 64 hex chars. Encrypts provider credentials at rest. Generate with `openssl rand -hex 32`. |
 | `WORKER_CONCURRENCY` | Parallel sends per worker process. Respect your email provider's rate limits. |
+| `RESEND_EMAILS_PER_SECOND` | Resend throttle per worker process. Defaults to `2` when unset. |
 | `LOG_LEVEL` | `debug`, `info`, `warn`, `error`, `fatal`. |
 | `RESEND_WEBHOOK_SECRET` | Optional. Set if you wire up Resend bounce / complaint webhooks. |
 | `POSTHOG_API_KEY` | Optional. Sends app telemetry to PostHog. |

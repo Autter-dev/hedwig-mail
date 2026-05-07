@@ -11,6 +11,7 @@ export interface SendOptions {
 
 export interface EmailProviderAdapter {
   send(options: SendOptions): Promise<{ messageId: string }>
+  sendBatch?(options: SendOptions[]): Promise<{ messageIds: string[] }>
   validate(): Promise<boolean>
 }
 

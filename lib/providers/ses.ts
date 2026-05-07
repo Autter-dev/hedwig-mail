@@ -14,10 +14,29 @@ function encodeHeaderValue(value: string): string {
   return `=?UTF-8?B?${Buffer.from(value, 'utf8').toString('base64')}?=`
 }
 
+function sanitizeHeaderName(value: string): string {
+  return value.replace(/[\r\n]+/g, ' ').trim()
+}
+
+function isSimpleAsciiToken(value: string): boolean {
+  return /^[A-Za-z0-9 !#$%&'*+\-/=?^_`{|}~.]+$/.test(value)
+}
+
+function maybeQuoteAsciiName(value: string): string {
+  if (!value) return value
+  if (isSimpleAsciiToken(value)) return value
+  return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+}
+
 function encodeAddress(name: string, email: string): string {
-  if (!name) return email
-  const encoded = encodeHeaderValue(name)
-  return `${encoded} <${email}>`
+  const normalizedName = sanitizeHeaderName(name)
+  if (!normalizedName) return email
+
+  if (hasNonAscii(normalizedName)) {
+    return `${encodeHeaderValue(normalizedName)} <${email}>`
+  }
+
+  return `${maybeQuoteAsciiName(normalizedName)} <${email}>`
 }
 
 function buildRawMime(options: SendOptions): string {
@@ -79,7 +98,7 @@ export class SESAdapter implements EmailProviderAdapter {
     try {
       const rawMessage = buildRawMime(options)
       const result = await this.client.send(new SendRawEmailCommand({
-        Source: `${options.fromName} <${options.from}>`,
+        Source: options.from,
         Destinations: [options.to],
         RawMessage: { Data: Buffer.from(rawMessage, 'utf8') },
       }))
