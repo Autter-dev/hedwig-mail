@@ -123,7 +123,13 @@ export class ResendAdapter implements EmailProviderAdapter {
       throw new Error(error.message)
     }
 
-    const messageIds = (data ?? []).map((item) => item.id).filter((id): id is string => Boolean(id))
+    // The installed Resend SDK types the batch success payload with an
+    // intersection that collapses `data` to `never` unless permissive
+    // validation is enabled, so read it defensively instead of trusting the type.
+    const batchItems = ((data as unknown as { data?: { id?: unknown }[] } | null)?.data ?? [])
+    const messageIds = batchItems
+      .map((item) => item.id)
+      .filter((id): id is string => typeof id === 'string' && id.length > 0)
     logger.info(
       { count: payload.length, sentCount: messageIds.length, durationMs },
       'Resend: batch email sent successfully'
