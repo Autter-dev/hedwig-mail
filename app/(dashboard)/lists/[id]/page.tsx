@@ -30,6 +30,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { DuplicatesTab } from '@/components/lists/DuplicatesTab'
 import { EmailCheckerTab } from '@/components/lists/EmailCheckerTab'
@@ -103,6 +104,9 @@ export default function ListDetailPage() {
 
   const [togglingOptIn, setTogglingOptIn] = useState(false)
 
+  const [deleteTarget, setDeleteTarget] = useState<Contact | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
   const { toast } = useToast()
 
   async function handleGdprExport(contact: Contact) {
@@ -153,6 +157,34 @@ export default function ListDetailPage() {
       toast({ title: 'Delete failed', variant: 'destructive' })
     } finally {
       setGdprDeleting(false)
+    }
+  }
+
+  async function handleDeleteContact() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const res = await fetch(`/api/internal/contacts/${deleteTarget.id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        toast({ title: data.error || 'Failed to delete contact', variant: 'destructive' })
+        return
+      }
+      toast({ title: `${deleteTarget.email} removed from this list` })
+      setDeleteTarget(null)
+      if (contacts.length === 1 && page > 1) {
+        setPage(page - 1)
+      } else {
+        fetchContacts()
+      }
+      const listRes = await fetch(`/api/internal/lists/${listId}`)
+      if (listRes.ok) setListInfo(await listRes.json())
+    } catch {
+      toast({ title: 'Failed to delete contact', variant: 'destructive' })
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -577,28 +609,40 @@ export default function ListDetailPage() {
                           {format(new Date(contact.createdAt), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-7 px-2">
-                                <span aria-hidden>...</span>
-                                <span className="sr-only">Open contact actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onSelect={() => handleGdprExport(contact)}>
-                                Export GDPR data
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onSelect={() => {
-                                  setGdprDeleteContact(contact)
-                                  setGdprConfirmEmail('')
-                                }}
-                              >
-                                Delete (GDPR)
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                              disabled={deleting && deleteTarget?.id === contact.id}
+                              onClick={() => setDeleteTarget(contact)}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden />
+                              <span className="sr-only">Delete {contact.email}</span>
+                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-7 px-2">
+                                  <span aria-hidden>...</span>
+                                  <span className="sr-only">Open contact actions</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onSelect={() => handleGdprExport(contact)}>
+                                  Export GDPR data
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onSelect={() => {
+                                    setGdprDeleteContact(contact)
+                                    setGdprConfirmEmail('')
+                                  }}
+                                >
+                                  Delete (GDPR)
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -658,6 +702,43 @@ export default function ListDetailPage() {
           />
         </TabsContent>
       </Tabs>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteTarget(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete contact</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p>
+              Delete <span className="font-mono">{deleteTarget?.email}</span> from this list?
+            </p>
+            <p className="text-muted-foreground">
+              The contact and its send and engagement history are permanently removed. This cannot be undone.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+              disabled={deleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={handleDeleteContact}
+            >
+              {deleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={gdprDeleteContact !== null}
