@@ -11,6 +11,7 @@ Setup, env vars, and deployment live in the top-level `README.md`. These docs as
 - [contact-lists.md](contact-lists.md): named lists with active, bounced, and unsubscribed tabs
 - [contact-upload.md](contact-upload.md): CSV and XLSX import with column mapping
 - [deduplication.md](deduplication.md): in-list merge and cross-list duplicate view
+- [email-checker.md](email-checker.md): verify list addresses and remove invalid ones
 - [global-suppression.md](global-suppression.md): project-wide do-not-send list
 - [subscription-forms.md](subscription-forms.md): hosted and embeddable signup forms
 - [double-opt-in.md](double-opt-in.md): pending status with confirmation link

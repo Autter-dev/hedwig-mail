@@ -33,7 +33,7 @@ import {
 import { Trash2 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import { DuplicatesTab } from '@/components/lists/DuplicatesTab'
-import { EmailCheckerTab } from '@/components/lists/EmailCheckerTab'
+import { SingleEmailCheck } from '@/components/email-checker/SingleEmailCheck'
 
 interface ListInfo {
   id: string
@@ -684,7 +684,18 @@ export default function ListDetailPage() {
         ))}
 
         <TabsContent value="email-check" className="space-y-4">
-          <EmailCheckerTab listId={listId} />
+          <div className="flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+            <div>
+              <p className="text-sm font-medium">Clean up this list</p>
+              <p className="text-sm text-muted-foreground">
+                Verify every contact and remove the addresses that will not deliver.
+              </p>
+            </div>
+            <Button asChild variant="outline">
+              <Link href={`/email-checker?listId=${listId}`}>Open Email Checker</Link>
+            </Button>
+          </div>
+          <SingleEmailCheck />
         </TabsContent>
 
         <TabsContent value="duplicates" className="space-y-4">

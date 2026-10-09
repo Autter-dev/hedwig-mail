@@ -109,8 +109,12 @@ Session-authenticated, used by the dashboard UI. Not part of the public contract
 | POST | `/api/internal/lists/[id]/upload/confirm` | `app/api/internal/lists/[id]/upload/confirm/route.ts` |
 | GET | `/api/internal/lists/[id]/duplicates` | `app/api/internal/lists/[id]/duplicates/route.ts` |
 | POST | `/api/internal/lists/[id]/duplicates/merge` | `app/api/internal/lists/[id]/duplicates/merge/route.ts` |
-| POST | `/api/internal/lists/[id]/email-check` | `app/api/internal/lists/[id]/email-check/route.ts` |
 | GET | `/api/internal/duplicates/cross-list` | `app/api/internal/duplicates/cross-list/route.ts` |
+| POST | `/api/internal/email-check` | `app/api/internal/email-check/route.ts` |
+| GET | `/api/internal/email-check/summary` | `app/api/internal/email-check/summary/route.ts` |
+| POST | `/api/internal/email-check/verify` | `app/api/internal/email-check/verify/route.ts` |
+| GET | `/api/internal/email-check/contacts` | `app/api/internal/email-check/contacts/route.ts` |
+| POST | `/api/internal/email-check/remove` | `app/api/internal/email-check/remove/route.ts` |
 
 ### Contacts
 
@@ -199,7 +203,9 @@ Queued checks use the `verify-contact-email` job in `worker.ts`. Pacing is contr
 
 Startup backfill is enabled by default for unverified contacts and can be disabled with `EMAIL_VERIFY_BACKFILL_ON_START=false`. Use `EMAIL_VERIFY_BACKFILL_MAX` to cap startup enqueue volume.
 
-Manual `POST /api/internal/lists/[id]/email-check` and `POST /api/v1/email-check` invoke the checker in the requesting process and do not use that queue. These checks use the SMTP identity configured in **Settings > Bounces**.
+On-demand list runs from the Email Checker screen (`POST /api/internal/email-check/verify`) use this same queue. See [email-checker.md](email-checker.md).
+
+Manual `POST /api/internal/email-check` and `POST /api/v1/email-check` invoke the checker in the requesting process and do not use that queue. These checks use the SMTP identity configured in **Settings > Bounces**.
 
 Checker calls are made through the local TypeScript client (`lib/email-checker/checkEmail.ts`) to an external checker API configured via `EMAIL_CHECKER_BASE_URL` (endpoint `/v1/check_email`). `EMAIL_CHECKER_API_SECRET` is required and is sent as `x-api-secret` on checker requests.
 

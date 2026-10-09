@@ -15,7 +15,7 @@ Named lists hold contacts and own the relationship to campaigns. Each list can o
 ## Routes & pages
 
 - `/lists`: index with counts
-- `/lists/[id]`: contact tabs (active, bounced, undeliverable, unsubscribed, pending), plus Duplicates and Email Checker
+- `/lists/[id]`: contact tabs (active, bounced, undeliverable, unsubscribed, pending), plus Duplicates and Email Checker (single-address check, with a link to the full [Email Checker](email-checker.md) screen)
 - `/lists/[id]/upload`: import flow (see [contact-upload.md](contact-upload.md))
 - `/lists/duplicates`: cross-list duplicates view (see [deduplication.md](deduplication.md))
 - `/settings/bounces` (admin): MAIL FROM and EHLO identity for SMTP verification (see below)
@@ -30,7 +30,6 @@ Named lists hold contacts and own the relationship to campaigns. Each list can o
 | PATCH | `/api/internal/lists/[id]` | Session | Update list |
 | DELETE | `/api/internal/lists/[id]` | Session | Delete list (cascades contacts) |
 | GET | `/api/internal/lists/[id]/contacts` | Session | Paginated contacts. Query: `page`, `limit`, `status`, `search` |
-| POST | `/api/internal/lists/[id]/email-check` | Session | Manual SMTP check for one email (body: `{ email }`). Does not persist. |
 | GET | `/api/internal/lists/[id]/export` | Session | Stream CSV of all contacts |
 | GET | `/api/internal/lists/[id]/merge-tags` | Session | Discover available metadata keys |
 

@@ -78,14 +78,9 @@ interface CheckResult {
 
 interface CheckResponse {
   result: CheckResult
-  listId: string
 }
 
-interface Props {
-  listId: string
-}
-
-export function EmailCheckerTab({ listId }: Props) {
+export function SingleEmailCheck() {
   const { toast } = useToast()
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -100,7 +95,7 @@ export function EmailCheckerTab({ listId }: Props) {
     setLoading(true)
     setResponse(null)
     try {
-      const res = await fetch(`/api/internal/lists/${listId}/email-check`, {
+      const res = await fetch('/api/internal/email-check', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: trimmed }),
@@ -173,7 +168,7 @@ export function EmailCheckerTab({ listId }: Props) {
       <Card>
         <CardContent className="pt-6 space-y-4">
           <p className="text-sm text-muted-foreground">
-            Run the same SMTP verification used after imports. This does not change contacts until you add or import them.
+            Run the same syntax, MX, and SMTP verification used after imports. Checking an address here does not change any contacts.
           </p>
           <div className="space-y-2">
             <Label htmlFor="check-email">Email</Label>
@@ -304,10 +299,6 @@ export function EmailCheckerTab({ listId }: Props) {
               </pre>
             </details>
 
-            <p className="text-xs text-muted-foreground">
-              Invalid or risky addresses are moved to the Undeliverable tab after automated
-              verification on import.
-            </p>
           </CardContent>
         </Card>
       )}
