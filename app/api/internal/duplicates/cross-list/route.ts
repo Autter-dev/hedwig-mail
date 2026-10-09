@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       normEmail: normEmailExpr,
     })
     .from(contacts)
-    .where(sql`lower(trim(${contacts.email})) = ANY(${pageEmails})`)
+    .where(inArray(normEmailExpr, pageEmails))
 
   const listIds = Array.from(new Set(matchingContacts.map((c) => c.listId)))
   const listRows = listIds.length
