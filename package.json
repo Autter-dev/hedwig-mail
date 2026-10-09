@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "tsx --test test/*.test.ts",
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx --env-file=.env.local lib/db/migrate.ts",
     "db:migrate:prod": "tsx lib/db/migrate.ts",

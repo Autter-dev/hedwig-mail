@@ -79,12 +79,26 @@ Use these prefixes for branches:
 4. Test your changes locally
 5. Commit with a clear message describing what changed and why
 
+## Running Tests
+
+Tests use Node's built-in test runner through `tsx`. Database tests run against a real Postgres and **delete data in it**, so they only run when `TEST_DATABASE_URL` is set. They never read `DATABASE_URL`. Point it at a throwaway database; migrations are applied automatically.
+
+```bash
+docker run -d --name hedwig-test-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=hedwig_test -p 5433:5432 postgres:16-alpine
+TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/hedwig_test npm test
+```
+
+Without `TEST_DATABASE_URL`, the database suite is skipped. In CI it is required, and the `test` job provides a Postgres service.
+
+Test files run in parallel and would share the same database, so keep database tests in `test/email-checker.test.ts` or run them serially. Import `test/helpers/test-env.ts` first in any database test file.
+
 ## Pull Request Checklist
 
 Before submitting a PR, confirm:
 
 - [ ] Code compiles without errors (`npx tsc --noEmit`)
 - [ ] Linter passes (`npm run lint`)
+- [ ] Tests pass (`npm test` with `TEST_DATABASE_URL` set)
 - [ ] New database changes have a migration (`npm run db:generate`)
 - [ ] Environment variables are documented in `.env.example` if added
 - [ ] No secrets or credentials are committed
