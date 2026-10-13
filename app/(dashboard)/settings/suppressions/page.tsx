@@ -81,6 +81,7 @@ export default function SuppressionsPage() {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState("")
+  const [reasonFilter, setReasonFilter] = useState<Reason | "all">("all")
 
   const [addOpen, setAddOpen] = useState(false)
   const [addEmail, setAddEmail] = useState("")
@@ -97,6 +98,7 @@ export default function SuppressionsPage() {
         limit: String(PAGE_SIZE),
       })
       if (search) params.set("search", search)
+      if (reasonFilter !== "all") params.set("reason", reasonFilter)
       const res = await fetch(`/api/internal/suppressions?${params.toString()}`)
       if (!res.ok) throw new Error()
       const json = (await res.json()) as ListResponse
@@ -107,7 +109,7 @@ export default function SuppressionsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, search, toast])
+  }, [page, search, reasonFilter, toast])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -228,6 +230,25 @@ export default function SuppressionsPage() {
           }}
           className="max-w-sm"
         />
+        <Select
+          value={reasonFilter}
+          onValueChange={(v) => {
+            setReasonFilter(v as Reason | "all")
+            setPage(1)
+          }}
+        >
+          <SelectTrigger aria-label="Filter by reason" className="w-44">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All reasons</SelectItem>
+            {(Object.keys(REASON_LABEL) as Reason[]).map((r) => (
+              <SelectItem key={r} value={r}>
+                {REASON_LABEL[r]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <p className="text-sm text-muted-foreground">
           {total.toLocaleString()} total
         </p>
@@ -237,7 +258,7 @@ export default function SuppressionsPage() {
         <Skeleton className="h-64 w-full" />
       ) : data.length === 0 ? (
         <div className="border rounded-xl p-8 text-center text-muted-foreground">
-          {search ? "No suppressions match your search." : "No suppressions yet."}
+          {search || reasonFilter !== "all" ? "No suppressions match your filters." : "No suppressions yet."}
         </div>
       ) : (
         <>

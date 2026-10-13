@@ -1,20 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { suppressions } from '@/lib/db/schema'
-import { ilike, sql, desc } from 'drizzle-orm'
+import { sql, desc } from 'drizzle-orm'
+import { parseSuppressionListQuery, suppressionListWhere } from '@/lib/suppressions/list-query'
 import { createSuppressionSchema } from '@/lib/validations/suppressions'
 import { suppressEmail, normalizeEmail } from '@/lib/suppressions'
 import { auditFromSession, logAudit } from '@/lib/audit'
 import { requireAdmin } from '@/lib/auth-helpers'
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1)
-  const limitRaw = parseInt(searchParams.get('limit') ?? '50', 10) || 50
-  const limit = Math.min(200, Math.max(1, limitRaw))
-  const search = (searchParams.get('search') ?? '').trim()
-
-  const where = search ? ilike(suppressions.email, `%${search.toLowerCase()}%`) : undefined
+  const parsed = parseSuppressionListQuery(new URL(req.url).searchParams)
+  if (!parsed.ok) return NextResponse.json({ error: parsed.error }, { status: 400 })
+  const { page, limit } = parsed.query
+  const where = suppressionListWhere(parsed.query)
 
   const dataQuery = db
     .select()
