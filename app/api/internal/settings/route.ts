@@ -23,7 +23,7 @@ export async function PATCH(req: NextRequest) {
 
   const parsed = updateAppSettingsSchema.safeParse(body)
   if (!parsed.success) {
-    const message = parsed.error.errors.map((e) => e.message).join(', ')
+    const message = parsed.error.issues.map((e) => e.message).join(', ')
     return NextResponse.json({ error: message }, { status: 400 })
   }
 
