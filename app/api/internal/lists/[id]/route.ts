@@ -49,7 +49,7 @@ export async function PATCH(
 
   const parsed = updateListSchema.safeParse(body)
   if (!parsed.success) {
-    const message = parsed.error.errors.map((e) => e.message).join(', ')
+    const message = parsed.error.issues.map((e) => e.message).join(', ')
     return NextResponse.json({ error: message }, { status: 400 })
   }
 
