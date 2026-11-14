@@ -21,7 +21,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   const parsed = updateFormSchema.safeParse(body)
   if (!parsed.success) {
-    const message = parsed.error.errors.map((e) => e.message).join(', ')
+    const message = parsed.error.issues.map((e) => e.message).join(', ')
     return NextResponse.json({ error: message }, { status: 400 })
   }
 

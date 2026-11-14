@@ -6,12 +6,12 @@ const optionalEmail = z.preprocess(
     const trimmed = v.trim()
     return trimmed.length === 0 ? undefined : trimmed
   },
-  z.string().email('Must be a valid email address').optional(),
+  z.email('Must be a valid email address').optional(),
 )
 
 export const createProviderSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  type: z.enum(['resend', 'ses'], { required_error: 'Type must be resend or ses' }),
+  type: z.enum(['resend', 'ses'], { message: 'Type must be resend or ses' }),
   apiKey: z.string().min(1, 'API key is required'),
   region: z.string().optional(),
   replyToEmail: optionalEmail,
