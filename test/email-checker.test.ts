@@ -7,8 +7,8 @@
  *
  *   TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/hedwig_test npm test
  *
- * Node runs test files in parallel, and every file would share this database, so
- * keep database tests in this file (or run them serially) to avoid clobbering.
+ * Every database test file shares this database, so `npm test` runs test files
+ * one at a time to avoid clobbering.
  */
 // Must be the first import: it points DATABASE_URL at the test database before lib/db loads.
 import { skipWithoutDatabase } from './helpers/test-env'
