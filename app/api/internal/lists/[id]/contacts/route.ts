@@ -5,6 +5,7 @@ import { contacts, lists } from '@/lib/db/schema'
 import { eq, ilike, and, count, SQL } from 'drizzle-orm'
 import { createContactSchema } from '@/lib/validations/contacts'
 import { auditFromSession, logAudit } from '@/lib/audit'
+import { isUniqueViolation } from '@/lib/db/errors'
 import { getQueue, JOBS } from '@/lib/queue'
 import { logger } from '@/lib/logger'
 import { enqueueContactEmailVerification } from '@/lib/email-verify'
@@ -112,8 +113,7 @@ export async function POST(
 
     return NextResponse.json(created, { status: 201 })
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : ''
-    if (msg.includes('unique') || msg.includes('duplicate')) {
+    if (isUniqueViolation(e)) {
       return NextResponse.json({ error: 'A contact with this email already exists in this list' }, { status: 409 })
     }
     throw e

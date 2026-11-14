@@ -90,7 +90,7 @@ TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5433/hedwig_test npm 
 
 Without `TEST_DATABASE_URL`, the database suite is skipped. In CI it is required, and the `test` job provides a Postgres service.
 
-Test files run in parallel and would share the same database, so keep database tests in `test/email-checker.test.ts` or run them serially. Import `test/helpers/test-env.ts` first in any database test file.
+Every database test file shares the same database and clears it between tests, so `npm test` runs test files one at a time (`--test-concurrency=1`). Import `test/helpers/test-env.ts` first in any database test file.
 
 ## Pull Request Checklist
 

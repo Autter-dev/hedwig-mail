@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm'
 import { withApiAuth } from '@/lib/api-auth'
 import { updateContactSchema } from '@/lib/validations/contacts'
 import { auditFromApiKey, logAudit } from '@/lib/audit'
+import { isUniqueViolation } from '@/lib/db/errors'
 
 export async function PUT(
   req: NextRequest,
@@ -33,11 +34,24 @@ export async function PUT(
     if (parsed.data.metadata !== undefined) updateData.metadata = parsed.data.metadata
     if (parsed.data.status !== undefined) updateData.status = parsed.data.status
 
-    const [updated] = await db
-      .update(contacts)
-      .set(updateData)
-      .where(and(eq(contacts.id, params.id), eq(contacts.listId, params.listId)))
-      .returning()
+    let updated: typeof contacts.$inferSelect | undefined
+    try {
+      const rows = await db
+        .update(contacts)
+        .set(updateData)
+        .where(and(eq(contacts.id, params.id), eq(contacts.listId, params.listId)))
+        .returning()
+      updated = rows[0]
+    } catch (err) {
+      // Changing the email to one another contact in this list already has.
+      if (isUniqueViolation(err)) {
+        return NextResponse.json(
+          { error: 'A contact with this email already exists in this list', data: null, meta: {} },
+          { status: 409 },
+        )
+      }
+      throw err
+    }
 
     if (!updated) {
       return NextResponse.json({ error: 'Contact not found', data: null, meta: {} }, { status: 404 })

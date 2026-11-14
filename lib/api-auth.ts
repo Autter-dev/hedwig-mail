@@ -4,6 +4,7 @@ import { apiKeys } from '@/lib/db/schema'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { consumeApiKeyToken, type RateLimitResult } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
 
 export interface ApiAuthContext {
   keyId: string
@@ -44,8 +45,25 @@ function v1ErrorResponse(status: number, error: string, headers?: Record<string,
 /**
  * Wraps a v1 API route handler with API key auth + per-key rate limiting.
  * On success, calls the handler with `auth` and decorates the response with X-RateLimit-* headers.
+ * Any error thrown by auth, rate limiting or the handler is logged and answered with a JSON 500
+ * in the v1 envelope, instead of the empty-body 500 Next.js sends for an uncaught error.
  */
 export async function withApiAuth(
+  req: NextRequest,
+  handler: (auth: ApiAuthContext) => Promise<NextResponse>,
+): Promise<NextResponse> {
+  try {
+    return await authenticateAndRun(req, handler)
+  } catch (err) {
+    logger.error(
+      { err, method: req.method, path: req.nextUrl.pathname },
+      'Unhandled error in v1 API route',
+    )
+    return v1ErrorResponse(500, 'Internal server error')
+  }
+}
+
+async function authenticateAndRun(
   req: NextRequest,
   handler: (auth: ApiAuthContext) => Promise<NextResponse>,
 ): Promise<NextResponse> {

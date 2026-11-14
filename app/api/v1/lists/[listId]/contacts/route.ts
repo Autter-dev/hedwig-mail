@@ -86,6 +86,8 @@ export async function POST(
     }
     const requireDoubleOptIn = list.requireDoubleOptIn
 
+    // A contact already in this list is a conflict, not a server error. Integrations
+    // retry on 5xx, so answering a duplicate with 500 makes them retry forever.
     const [created] = await db
       .insert(contacts)
       .values({
@@ -98,26 +100,54 @@ export async function POST(
           ? { status: 'pending', confirmationToken: randomUUID() }
           : {}),
       })
+      .onConflictDoNothing({ target: [contacts.listId, contacts.email] })
       .returning()
 
-    if (requireDoubleOptIn && created) {
-      try {
-        const queue = await getQueue()
-        await queue.send(JOBS.SEND_CONFIRMATION, { contactId: created.id })
-      } catch (err) {
-        logger.error({ err, contactId: created.id }, 'Failed to enqueue confirmation job')
-      }
+    if (!created) {
+      const [existing] = await db
+        .select({ id: contacts.id, email: contacts.email, status: contacts.status })
+        .from(contacts)
+        .where(and(eq(contacts.listId, params.listId), eq(contacts.email, parsed.data.email)))
+      return NextResponse.json(
+        {
+          data: existing ?? null,
+          meta: {},
+          error: 'A contact with this email already exists in this list',
+        },
+        { status: 409 },
+      )
     }
 
-    await enqueueContactEmailVerification([created.id])
+    // The contact exists from here on, so nothing below may fail the request. A 5xx
+    // would make the caller retry, and every retry would then be a duplicate.
+    if (requireDoubleOptIn) {
+      await runSideEffect('enqueue confirmation job', created.id, async () => {
+        const queue = await getQueue()
+        await queue.send(JOBS.SEND_CONFIRMATION, { contactId: created.id })
+      })
+    }
 
-    await logAudit(
-      auditFromApiKey(req, auth),
-      'contact.create',
-      { type: 'contact', id: created.id },
-      { listId: params.listId, email: created.email, requireDoubleOptIn },
+    await runSideEffect('enqueue email verification', created.id, () =>
+      enqueueContactEmailVerification([created.id]),
+    )
+
+    await runSideEffect('write audit log', created.id, () =>
+      logAudit(
+        auditFromApiKey(req, auth),
+        'contact.create',
+        { type: 'contact', id: created.id },
+        { listId: params.listId, email: created.email, requireDoubleOptIn },
+      ),
     )
 
     return NextResponse.json({ data: created, meta: {}, error: null }, { status: 201 })
   })
+}
+
+async function runSideEffect(label: string, contactId: string, fn: () => Promise<unknown>) {
+  try {
+    await fn()
+  } catch (err) {
+    logger.error({ err, contactId }, `Failed to ${label} after creating contact`)
+  }
 }
