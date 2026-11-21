@@ -522,7 +522,7 @@ async function main() {
 
   process.on('SIGTERM', async () => {
     logger.info('SIGTERM received, shutting down worker')
-    await boss.stop()
+    await boss.stop({ timeout: 30_000 })
     await shutdownTracking()
     process.exit(0)
   })
