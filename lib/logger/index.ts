@@ -18,6 +18,11 @@ function getPostHog(): PostHog | null {
   if (!apiKey || !host) return null
   try {
     posthogClient = new PostHog(apiKey, { host, flushAt: 10, flushInterval: 5000 })
+    // posthog-node 6 reports delivery failures on the 'error' event instead of
+    // rejecting captureImmediate(), so listen for them to keep our logging.
+    posthogClient.on('error', (err) => {
+      logger.warn({ err }, 'PostHog delivery error')
+    })
     logger.info({ host }, 'PostHog tracking initialized')
     return posthogClient
   } catch (err) {
